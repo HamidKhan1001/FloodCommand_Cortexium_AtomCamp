@@ -17,13 +17,14 @@ const DEMO_MESSAGES = [
   },
 ];
 
-export default function DemoButton({ socket, onVictimAdded }: any) {
-  const [loading, setLoading] = useState(false);
+export default function DemoButton({ onVictimAdded }: any) {
+  const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
 
-  const sendMessage = async (message: string) => {
-    setLoading(true);
+  const sendMessage = async (message: string, idx: number) => {
+    setLoadingIndex(idx);
     try {
-      const response = await fetch('http://localhost:8000/intake', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const response = await fetch(`${apiUrl}/intake`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -32,63 +33,67 @@ export default function DemoButton({ socket, onVictimAdded }: any) {
         }),
       });
 
-      const data = await response.json();
-      console.log('Response:', data);
-
-      // Simulate phone notifications
+      await response.json();
+      
+      // Refresh UI quickly
       setTimeout(() => {
-        playNotificationSound();
-      }, 3000);
+        onVictimAdded();
+      }, 500);
 
-      onVictimAdded();
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error sending message:', error);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const playNotificationSound = () => {
-    try {
-        const audio = new Audio(
-        'data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA=='
-        );
-        audio.play().catch(() => {});
-    } catch (e) {
-        // Ignore audio errors during demo
+      setLoadingIndex(null);
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-      <h2 className="text-2xl font-bold mb-4">📱 Demo: Send Urdu Messages</h2>
-      <p className="text-gray-600 mb-6">
-        Click to simulate WhatsApp messages from flood victims
-      </p>
+    <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
+      
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <span>📱</span> Live Simulation Mode
+          </h2>
+          <p className="text-slate-400 text-sm mt-1">
+            Click to simulate raw WhatsApp messages hitting the intake webhook
+          </p>
+        </div>
+        <div className="text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+          </span>
+          Zero API Keys Required
+        </div>
+      </div>
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {DEMO_MESSAGES.map((msg, idx) => (
-          <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-gray-50 rounded">
-            <div className="flex-1">
-              <p className="font-semibold text-sm">{msg.text}</p>
-              <p className="text-xs text-gray-500">{msg.translation}</p>
+          <div key={idx} className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-4 flex flex-col justify-between hover:border-slate-600 transition-colors group">
+            <div className="mb-4">
+              <p className="font-semibold text-slate-200 text-sm leading-snug">"{msg.text}"</p>
+              <p className="text-xs text-slate-500 mt-2 italic font-mono">{msg.translation}</p>
             </div>
             <button
-              onClick={() => sendMessage(msg.text)}
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-sm font-bold w-full sm:w-auto"
+              onClick={() => sendMessage(msg.text, idx)}
+              disabled={loadingIndex !== null}
+              className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all ${
+                loadingIndex === idx 
+                  ? 'bg-blue-600/50 text-blue-200 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_20px_rgba(59,130,246,0.6)]'
+              }`}
             >
-              {loading ? 'Sending...' : 'Send'}
+              {loadingIndex === idx ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  Processing...
+                </span>
+              ) : 'Send Simulation'}
             </button>
           </div>
         ))}
-      </div>
-
-      <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-500">
-        <p className="text-sm text-blue-900">
-          💡 <strong>Demo Flow:</strong> Click "Send" → Agents process (3-5s) →
-          Victim appears on map → SMS notification simulated (judges' phones buzz)
-        </p>
       </div>
     </div>
   );
