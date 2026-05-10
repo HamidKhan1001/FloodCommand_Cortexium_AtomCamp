@@ -145,19 +145,21 @@ connected_clients = []
 import os
 
 # ============================================================================
-# TWILIO SETUP
+# TWILIO SETUP (Fallback Support)
 # ============================================================================
-TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
-TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
-TWILIO_SENDER_NUMBER = os.getenv("TWILIO_SENDER_NUMBER", "+14155238886") # Use Twilio Phone Number here for SMS
+TWILIO_ACCOUNTS_ENV = os.getenv("TWILIO_ACCOUNTS", "")
+twilio_accounts = []
 
-try:
-    if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
-        twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-    else:
-        twilio_client = None
-except:
-    twilio_client = None
+if TWILIO_ACCOUNTS_ENV:
+    # Format: "SID|TOKEN|SENDER,SID2|TOKEN2|SENDER2"
+    for acc in TWILIO_ACCOUNTS_ENV.split(","):
+        parts = acc.split("|")
+        if len(parts) == 3:
+            twilio_accounts.append({
+                "sid": parts[0].strip(),
+                "token": parts[1].strip(),
+                "sender": parts[2].strip()
+            })
 
 # ============================================================================
 # MOCK AGENTS (Rule-based, no API calls)
@@ -385,23 +387,24 @@ Dispatch immediately!
         print(f"\n[SMS TO VICTIM] {victim_msg}")
         print(f"\n[SMS TO NGO] {ngo_msg}")
         
-        if twilio_client:
-            try:
-                # Twilio requires the sender to have the "whatsapp:" prefix if the receiver has it
-                clean_sender = TWILIO_SENDER_NUMBER.replace("whatsapp:", "")
-                sender = f"whatsapp:{clean_sender}" if victim_phone.startswith("whatsapp:") else clean_sender
-                
-                # If they clicked the Simulation button, the mock phone doesn't have "whatsapp:"
-                # If they want it on WhatsApp, we can force it, but let's trust the input
-                
-                twilio_client.messages.create(
-                    from_=sender,
-                    body=victim_msg,
-                    to=victim_phone
-                )
-                print("[Twilio] Message sent to victim successfully.")
-            except Exception as e:
-                print(f"[Twilio] Failed to send message: {e}")
+        if twilio_accounts:
+            for acc in twilio_accounts:
+                try:
+                    twilio_client = Client(acc['sid'], acc['token'])
+                    
+                    # Twilio requires the sender to have the "whatsapp:" prefix if the receiver has it
+                    clean_sender = acc['sender'].replace("whatsapp:", "")
+                    sender = f"whatsapp:{clean_sender}" if victim_phone.startswith("whatsapp:") else clean_sender
+                    
+                    twilio_client.messages.create(
+                        from_=sender,
+                        body=victim_msg,
+                        to=victim_phone
+                    )
+                    print(f"[Twilio] Message sent to victim successfully using account {acc['sid'][:6]}")
+                    break # Success! Exit the fallback loop
+                except Exception as e:
+                    print(f"[Twilio Fallback] Account {acc['sid'][:6]} failed: {e}. Trying next account...")
         
         return {
             "messages_sent": 2,
