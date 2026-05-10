@@ -21,7 +21,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Connect to backend API. Update NEXT_PUBLIC_API_URL once deployed.
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     const newSocket = io(apiUrl, {
       transports: ['websocket', 'polling'],
     });

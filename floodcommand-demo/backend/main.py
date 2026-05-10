@@ -1,4 +1,5 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, Request, Form, Response
+from twilio.rest import Client
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import json
@@ -136,6 +137,23 @@ app.add_middleware(
 )
 
 connected_clients = []
+
+import os
+
+# ============================================================================
+# TWILIO SETUP
+# ============================================================================
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
+TWILIO_SANDBOX_NUMBER = os.getenv("TWILIO_SANDBOX_NUMBER", "whatsapp:+14155238886")
+
+try:
+    if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
+        twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    else:
+        twilio_client = None
+except:
+    twilio_client = None
 
 # ============================================================================
 # MOCK AGENTS (Rule-based, no API calls)
@@ -363,6 +381,17 @@ Dispatch immediately!
         print(f"\n[SMS TO VICTIM] {victim_msg}")
         print(f"\n[SMS TO NGO] {ngo_msg}")
         
+        if twilio_client and victim_phone.startswith("whatsapp:"):
+            try:
+                twilio_client.messages.create(
+                    from_=TWILIO_SANDBOX_NUMBER,
+                    body=victim_msg,
+                    to=victim_phone
+                )
+                print("[Twilio] WhatsApp message sent to victim successfully.")
+            except Exception as e:
+                print(f"[Twilio] Failed to send WhatsApp: {e}")
+        
         return {
             "messages_sent": 2,
             "victim_sms": victim_msg,
@@ -514,6 +543,13 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+@app.post("/twilio/webhook")
+async def twilio_webhook(From: str = Form(...), Body: str = Form(...)):
+    """Receive incoming WhatsApp from Twilio and trigger workflow"""
+    req = IntakeRequest(message=Body, phone=From)
+    await handle_intake(req)
+    return Response(content="<Response></Response>", media_type="text/xml")
 
 if __name__ == "__main__":
     import uvicorn
