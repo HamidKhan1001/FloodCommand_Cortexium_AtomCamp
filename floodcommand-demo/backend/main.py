@@ -145,7 +145,7 @@ import os
 # ============================================================================
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
-TWILIO_SANDBOX_NUMBER = os.getenv("TWILIO_SANDBOX_NUMBER", "whatsapp:+14155238886")
+TWILIO_SENDER_NUMBER = os.getenv("TWILIO_SENDER_NUMBER", "+14155238886") # Use Twilio Phone Number here for SMS
 
 try:
     if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
@@ -381,16 +381,16 @@ Dispatch immediately!
         print(f"\n[SMS TO VICTIM] {victim_msg}")
         print(f"\n[SMS TO NGO] {ngo_msg}")
         
-        if twilio_client and victim_phone.startswith("whatsapp:"):
+        if twilio_client:
             try:
                 twilio_client.messages.create(
-                    from_=TWILIO_SANDBOX_NUMBER,
+                    from_=TWILIO_SENDER_NUMBER,
                     body=victim_msg,
                     to=victim_phone
                 )
-                print("[Twilio] WhatsApp message sent to victim successfully.")
+                print("[Twilio] Message sent to victim successfully.")
             except Exception as e:
-                print(f"[Twilio] Failed to send WhatsApp: {e}")
+                print(f"[Twilio] Failed to send message: {e}")
         
         return {
             "messages_sent": 2,
