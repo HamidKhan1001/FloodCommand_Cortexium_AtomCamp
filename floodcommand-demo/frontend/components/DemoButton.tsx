@@ -29,7 +29,7 @@ export default function DemoButton({ onVictimAdded }: any) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: message,
-          phone: `+9230${Math.floor(Math.random() * 9000000000000)}`,
+          phone: "whatsapp:+923496563463", // Your exact Sandbox verified phone number
         }),
       });
 

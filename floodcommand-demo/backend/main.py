@@ -383,8 +383,15 @@ Dispatch immediately!
         
         if twilio_client:
             try:
+                # Twilio requires the sender to have the "whatsapp:" prefix if the receiver has it
+                clean_sender = TWILIO_SENDER_NUMBER.replace("whatsapp:", "")
+                sender = f"whatsapp:{clean_sender}" if victim_phone.startswith("whatsapp:") else clean_sender
+                
+                # If they clicked the Simulation button, the mock phone doesn't have "whatsapp:"
+                # If they want it on WhatsApp, we can force it, but let's trust the input
+                
                 twilio_client.messages.create(
-                    from_=TWILIO_SENDER_NUMBER,
+                    from_=sender,
                     body=victim_msg,
                     to=victim_phone
                 )
