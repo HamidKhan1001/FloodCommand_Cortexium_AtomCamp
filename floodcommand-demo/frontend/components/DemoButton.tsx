@@ -23,7 +23,7 @@ export default function DemoButton({ onVictimAdded }: any) {
   const sendMessage = async (message: string, idx: number) => {
     setLoadingIndex(idx);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiUrl = 'https://floodcommand-backend-540448741613.us-central1.run.app';
       const response = await fetch(`${apiUrl}/intake`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

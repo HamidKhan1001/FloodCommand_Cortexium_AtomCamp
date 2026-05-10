@@ -20,8 +20,8 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    // Connect to backend API. Update NEXT_PUBLIC_API_URL once deployed.
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    // Connect to backend API directly to bypass Vercel env var errors
+    const apiUrl = 'https://floodcommand-backend-540448741613.us-central1.run.app';
     const newSocket = io(apiUrl, {
       transports: ['websocket', 'polling'],
     });
@@ -88,7 +88,7 @@ export default function Dashboard() {
         </header>
 
         {/* Demo Controls */}
-        <DemoButton onVictimAdded={() => fetchVictims(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080')} />
+        <DemoButton onVictimAdded={() => fetchVictims('https://floodcommand-backend-540448741613.us-central1.run.app')} />
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-8">
